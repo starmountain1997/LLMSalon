@@ -1,0 +1,12 @@
+semaphore: 30
+
+
+chatter:
+  salon_cache_template: 
+    prefix: |
+      Here's a summary of the recent conversation (in order of speaking):\n
+    speaker: |
+      {speaker} said:\n\n{message}\n\n---\n\n
+    suffix: |
+      Based on the above and the main topic, what are your thoughts now? Please state your ideas or opinions directly.
+    
