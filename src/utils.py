@@ -33,6 +33,7 @@ class SSEClient:
                             continue
 
                         decoded_line = line.decode("utf-8").strip()
+
                         if not decoded_line.startswith("data:"):
                             continue
                         json_data_str = decoded_line[len("data:") :].strip()
@@ -44,7 +45,7 @@ class SSEClient:
                             if "choices" in chunk and chunk["choices"]:
                                 delta = chunk["choices"][0].get("delta", {})
 
-                                if "content" in delta and delta["content"]:
+                                if delta.get("content"):
                                     yield {"type": "content", "data": delta["content"]}
                                 elif (
                                     "reasoning_content" in delta

@@ -10,7 +10,7 @@ async def run_salon_gradio(topic: str, rounds: int):
     salon = Salon()
     chat_history = []
     current_speaker = None
-    current_cot=""
+    current_cot = ""
 
     try:
         async for event_type, data in salon.chatting(topic, int(rounds)):
@@ -20,6 +20,7 @@ async def run_salon_gradio(topic: str, rounds: int):
                 chat_history.append((speaker_label, ""))
                 yield chat_history
             elif event_type == "content_piece" and current_speaker:
+                current_cot = ""
                 if (
                     not chat_history
                     or chat_history[-1][0] != f"✨ **{current_speaker}** ✨"
@@ -35,10 +36,9 @@ async def run_salon_gradio(topic: str, rounds: int):
                     or chat_history[-1][0] != f"✨ **{current_speaker}** ✨"
                 ):
                     chat_history.append((f"✨ **{current_speaker}** ✨", None))
-                    current_cot=""
-                current_cot+=str(data)
-                formatted_cot=f"<pre style='white-space: pre-wrap; word-wrap: break-word;'>{html.escape(current_cot)}</pre>"
-                foldable_current_cot= f"""
+                current_cot += str(data)
+                formatted_cot = f"<pre style='white-space: pre-wrap; word-wrap: break-word;'>{html.escape(current_cot)}</pre>"
+                foldable_current_cot = f"""
 <details open style="margin-top: 10px; border: 1px solid #eee; border-radius: 5px; padding: 5px;">
   <summary style="cursor: pointer; font-weight: bold; color: #555;">显示/隐藏 推理过程</summary>
   {formatted_cot}
@@ -83,7 +83,7 @@ def main():
                 label="Number of Rounds",
                 value=settings.rounds,
                 minimum=1,
-                maximum=30,
+                maximum=100,
                 step=1,
                 scale=1,
             )

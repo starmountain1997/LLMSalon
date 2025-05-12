@@ -13,9 +13,7 @@ class Chatter:
         system_prompt: str,
         temperature: float = 0.7,
         top_p: float = 1.0,
-        max_tokens: int = 150,
-        presence_penalty: float = 0.0,
-        frequency_penalty: float = 0.0,
+        max_tokens: int = None,
         *args,
         **kwargs,
     ):
@@ -25,8 +23,6 @@ class Chatter:
         self._temperature = temperature
         self._top_p = top_p
         self._max_tokens = max_tokens
-        self._presence_penalty = presence_penalty
-        self._frequency_penalty = frequency_penalty
         self._history: List[Dict[str, str]] = [
             {"role": "system", "content": system_prompt}
         ]
@@ -59,17 +55,21 @@ class Chatter:
     def _add_assistant_message(self, message: str):
         self.history.append({"role": "assistant", "content": message})
 
-    def _add_user_message(self):
-        self.history.append({"role": "user", "content": self.get_salon_cache()})
+    def _add_user_message(self, current_round: int = None, total_rounds: int = None):
+        self.history.append(
+            {
+                "role": "user",
+                "content": self.get_salon_cache(current_round, total_rounds),
+            }
+        )
 
     @property
     def url(self) -> str:
-        return urljoin(
-            self.provider["base_url"],
-            "chat/completions",
-        )
+        return self.provider["url"]
 
-    def get_salon_cache(self) -> str:
+    def get_salon_cache(
+        self, current_round: int = None, total_rounds: int = None
+    ) -> str:
         salon_cache_template = settings.template.salon_cache
         message_str = salon_cache_template.prefix
         for speaker, message in self._salon_cache:
@@ -77,19 +77,24 @@ class Chatter:
                 speaker=speaker, message=message
             )
         message_str += salon_cache_template.suffix
+        if current_round and total_rounds:
+            message += salon_cache_template.round_index.format(
+                current_round=current_round, total_rounds=total_rounds
+            )
+
         self._salon_cache.clear()
         return message_str
 
-    async def speaking(self) -> AsyncGenerator[str, None]:
-        self._add_user_message()
+    async def speaking(
+        self, current_round: int = None, total_rounds: int = None
+    ) -> AsyncGenerator[str, None]:
+        self._add_user_message(current_round, total_rounds)
         payload = {
             "model": self.model_name,
             "messages": self.history,
             "temperature": self._temperature,
             "top_p": self._top_p,
             "max_tokens": self._max_tokens,
-            "presence_penalty": self._presence_penalty,
-            "frequency_penalty": self._frequency_penalty,
             "stream": True,
         }
         content_response = []

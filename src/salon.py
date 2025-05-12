@@ -93,7 +93,7 @@ class Salon:
         for _, chatter in self._chatters.items():
             chatter.add_salon_cache(self.hoster_name, topic)
 
-        for _ in range(rounds):
+        for i in range(rounds):
             for speaker_name, speaker in self.chatters.items():
                 yield ("speaker_turn", speaker_name)
                 current_utterance = ""
@@ -109,9 +109,16 @@ class Salon:
                     v_chatter.add_salon_cache(speaker_name, current_utterance)
                 self.hoster.add_salon_cache(speaker_name, current_utterance)
             hoster_utterance = ""
+            if settings.show_hoster:
+                yield ("speaker_turn", self.hoster_name)
             async for piece in self.hoster.speaking():
                 if piece["type"] == "content":
+                    if settings.show_hoster:
+                        yield ("content_piece", piece["data"])
                     hoster_utterance += piece["data"]
+                elif piece["type"] == "reasoning":
+                    if settings.show_hoster:
+                        yield ("reasoning_piece", piece["data"])
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
 
