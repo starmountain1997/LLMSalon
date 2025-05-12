@@ -3,7 +3,7 @@ show_hoster: true
 
 providers:
   deepseek:
-    api_key: sk-xxxxxxx
+    api_key: sk-xxxxxxx # 修改这里
     url: https://api.deepseek.com/v1/chat/completions
 
 template:
