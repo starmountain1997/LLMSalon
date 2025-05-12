@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from chatter import Chatter
-from typing import Dict
+from typing import Any, AsyncGenerator, Dict, Tuple
 from config import settings
 
 
@@ -21,7 +21,6 @@ class Salon:
                     if k not in ["model_name", "system_prompt", "provider"]
                 },
             )
-          
 
         hoster_cfg = settings.hoster
         system_prompt = self._generate_hoster_system_prompt(hoster_cfg, chatters_cfg)
@@ -38,7 +37,6 @@ class Salon:
                 },
             ),
         )
-       
 
     @property
     def topic(self) -> str:
@@ -89,16 +87,22 @@ class Salon:
         system_prompt += prompt_template.suffix.format()
         return system_prompt
 
-    async def chatting(self, topic: str, rounds: int = 10):
+    async def chatting(
+        self, topic: str, rounds: int = 10
+    ) -> AsyncGenerator[Tuple[str, Any], None]:
         for _, chatter in self._chatters.items():
             chatter.add_salon_cache(self.hoster_name, topic)
 
-        for i in range(rounds):
+        for _ in range(rounds):
             for speaker_name, speaker in self.chatters.items():
+                yield ("speaker_turn", speaker_name)
                 current_utterance = ""
                 async for piece in speaker.speaking():
-                    current_utterance += piece
-
+                    if piece["type"] == "content":
+                        yield ("content_piece", piece["data"])
+                        current_utterance += piece["data"]
+                    elif piece["type"] == "reasoning":
+                        yield ("reasoning_piece", piece["data"])
                 for k, v_chatter in self._chatters.items():
                     if k == speaker_name:
                         continue
@@ -106,7 +110,8 @@ class Salon:
                 self.hoster.add_salon_cache(speaker_name, current_utterance)
             hoster_utterance = ""
             async for piece in self.hoster.speaking():
-                hoster_utterance += piece
+                if piece["type"] == "content":
+                    hoster_utterance += piece["data"]
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
 

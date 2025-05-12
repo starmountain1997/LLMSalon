@@ -92,13 +92,18 @@ class Chatter:
             "frequency_penalty": self._frequency_penalty,
             "stream": True,
         }
-        full_response = []
+        content_response = []
+        reasoning_response = []
         async for chunk in SSEClient.send_sse(
             url=self.url,
             payload=payload,
             api_key=self.provider["api_key"],
         ):
+            if chunk["type"] == "content":
+                content_response.append(chunk["data"])
+            elif chunk["type"] == "reasoning":
+                # 可以选择不yield reasoning内容，或做特殊处理
+                reasoning_response.append(chunk["data"])
             yield chunk
-            full_response.append(chunk)
 
-        self._add_assistant_message("".join(full_response))
+        self._add_assistant_message("".join(content_response))

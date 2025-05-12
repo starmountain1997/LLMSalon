@@ -65,11 +65,11 @@ template:
 # p: &p win-gaming
 # m: &m qwen
 
-p: &p siliconflow
-m: &m Pro/THUDM/glm-4-9b-chat
+# p: &p siliconflow
+# m: &m Pro/THUDM/glm-4-9b-chat
 
-# p: &p deepseek
-# m: &m deepseek-chat
+p: &p deepseek
+m: &m deepseek-reasoner
 
 # p: &p gemini
 # m: &m gemini-2.0-flash
@@ -100,3 +100,6 @@ hoster:
   temperature: 1.5
   top_p: 0.95
 
+topic: |
+  今晚是笑话之夜！
+rounds: 10

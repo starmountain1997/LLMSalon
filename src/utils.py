@@ -45,14 +45,15 @@ class SSEClient:
                                 delta = chunk["choices"][0].get("delta", {})
 
                                 if "content" in delta and delta["content"]:
-                                    content_piece = delta["content"]
-                                    yield content_piece
+                                    yield {"type": "content", "data": delta["content"]}
                                 elif (
                                     "reasoning_content" in delta
                                     and delta["reasoning_content"]
                                 ):
-                                    reasoning_content_piece = delta["reasoning_content"]
-                                    yield reasoning_content_piece
+                                    yield {
+                                        "type": "reasoning",
+                                        "data": delta["reasoning_content"],
+                                    }
 
                             elif chunk.get("error"):
                                 error_info = chunk["error"]
