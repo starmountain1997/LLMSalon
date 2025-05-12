@@ -1,6 +1,11 @@
 semaphore: 30
 show_hoster: true
 
+providers:
+  deepseek:
+    api_key: sk-xxxxxxx
+    url: https://api.deepseek.com/v1/chat/completions
+
 template:
   salon_cache:
     prefix: |
@@ -66,23 +71,10 @@ template:
         1. 专注于你的观点。
         1. 如果任务完成，回复“任务完成”
 
-p: &p win-gaming
-m: &m qwen
-
-# p: &p siliconflow
-# m: &m Pro/THUDM/glm-4-9b-chat
-
-# p: &p deepseek
-# m: &m deepseek-reasoner
-
-# p: &p gemini
-# m: &m gemini-2.0-flash
-# m: &m gemini-2.5-pro-exp-03-25
-
 chatters:
   学生:
-    provider: *p
-    model_name: *m
+    provider: deepseek
+    model_name: deepseek-chat
     system_prompt: |
       你是一位充满热情、渴望学习的年轻诗人。
       你的目标是创作出意境优美、情感真挚的诗歌。
@@ -93,8 +85,8 @@ chatters:
     top_p: 0.95
 
   老师:
-    provider: *p
-    model_name: *m
+    provider: deepseek
+    model_name: deepseek-chat
     system_prompt: |
       你是一位治学严谨、一丝不苟的汉语言专家。
       你的核心职责是审阅学生创作的诗歌。
@@ -108,8 +100,8 @@ chatters:
 
 hoster:
   name: "主持人"
-  provider: *p
-  model_name: *m
+  provider: deepseek
+  model_name: deepseek-chat
   system_prompt: |
     你扮演主持人，负责引导学生和老师之间的互动，共同创作一首诗歌。
     你的任务包括：
