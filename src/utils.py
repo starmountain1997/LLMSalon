@@ -9,6 +9,7 @@ from loguru import logger
 
 from config import settings
 
+
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
 
@@ -40,14 +41,17 @@ class SSEClient:
                             break
                         try:
                             chunk = json.loads(json_data_str)
-                        
+
                             if "choices" in chunk and chunk["choices"]:
                                 delta = chunk["choices"][0].get("delta", {})
 
                                 if "content" in delta and delta["content"]:
                                     content_piece = delta["content"]
                                     yield content_piece
-                                elif "reasoning_content" in delta and delta["reasoning_content"]:
+                                elif (
+                                    "reasoning_content" in delta
+                                    and delta["reasoning_content"]
+                                ):
                                     reasoning_content_piece = delta["reasoning_content"]
                                     yield reasoning_content_piece
 
@@ -70,6 +74,7 @@ class SSEClient:
             except Exception as e:
                 logger.error(f"SSE request failed: {str(e)}")
                 raise
+
 
 if __name__ == "__main__":
     pass

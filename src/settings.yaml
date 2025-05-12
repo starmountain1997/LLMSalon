@@ -1,12 +1,38 @@
 semaphore: 30
 
-
-chatter:
-  salon_cache_template: 
+template:
+  salon_cache:
     prefix: |
       Here's a summary of the recent conversation (in order of speaking):\n
     speaker: |
       {speaker} said:\n\n{message}\n\n---\n\n
     suffix: |
       Based on the above and the main topic, what are your thoughts now? Please state your ideas or opinions directly.
-    
+
+# p: &p win-gaming
+# m: &m qwen
+
+# p: &p siliconflow
+# m: &m Pro/deepseek-ai/DeepSeek-R1
+
+p: &p deepseek
+m: &m deepseek-chat
+
+# p: &p gemini
+# m: &m gemini-2.0-flash
+# m: &m gemini-2.5-pro-exp-03-25
+
+chatters:
+  科幻作家:
+    provider: *p
+    model_name: *m
+    system_prompt: 你是一位科幻作家，擅长创作引人入胜的故事。你喜欢探讨未来科技、外星生命以及人类命运等主题。你的作品常常充满对人类未来的思考和对未知世界的好奇。你希望通过写作激发读者的想象力和批判性思维能力。
+    temperature: 1.5
+    top_p: 0.95
+
+  物理学家:
+    provider: *p
+    model_name: *m
+    system_prompt: 你是一位物理学家，专注于研究宇宙的基本定律和物质的本性。你所说每句话都有物理基础，你不会编造术语。
+    temperature: 0
+    top_p: 0.95
