@@ -97,7 +97,7 @@ class Salon:
             for speaker_name, speaker in self.chatters.items():
                 yield ("speaker_turn", speaker_name)
                 current_utterance = ""
-                async for piece in speaker.speaking():
+                async for piece in speaker.speaking(i, rounds):
                     if piece["type"] == "content":
                         yield ("content_piece", piece["data"])
                         current_utterance += piece["data"]
@@ -116,9 +116,13 @@ class Salon:
                     if settings.show_hoster:
                         yield ("content_piece", piece["data"])
                     hoster_utterance += piece["data"]
+                    # 检测是否包含任务完成标记
+
                 elif piece["type"] == "reasoning":
                     if settings.show_hoster:
                         yield ("reasoning_piece", piece["data"])
+            if "任务完成" in hoster_utterance:
+                break
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
 
