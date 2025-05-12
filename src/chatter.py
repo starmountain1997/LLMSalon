@@ -2,7 +2,7 @@ from typing import AsyncGenerator, Dict, List
 
 from utils import SSEClient
 from config import settings
-from loguru import logger
+from urllib.parse import urljoin
 
 
 class Chatter:
@@ -16,6 +16,8 @@ class Chatter:
         max_tokens: int = 150,
         presence_penalty: float = 0.0,
         frequency_penalty: float = 0.0,
+        *args,
+        **kwargs,
     ):
         self._provider = settings.providers[provider]
         self._model_name = model_name
@@ -54,11 +56,18 @@ class Chatter:
     def add_salon_cache(self, speaker: str, message: str):
         self.salon_cache.append((speaker, message))
 
-    def add_assistant_message(self, message: str):
+    def _add_assistant_message(self, message: str):
         self.history.append({"role": "assistant", "content": message})
 
-    def add_user_message(self, message: str):
-        self.history.append({"role": "user", "content": message})
+    def _add_user_message(self):
+        self.history.append({"role": "user", "content": self.get_salon_cache()})
+
+    @property
+    def url(self) -> str:
+        return urljoin(
+            self.provider["base_url"],
+            "chat/completions",
+        )
 
     def get_salon_cache(self) -> str:
         salon_cache_template = settings.template.salon_cache
@@ -68,11 +77,11 @@ class Chatter:
                 speaker=speaker, message=message
             )
         message_str += salon_cache_template.suffix
-        logger.debug(f"salon cache:\n{message_str}")
         self._salon_cache.clear()
         return message_str
 
     async def speaking(self) -> AsyncGenerator[str, None]:
+        self._add_user_message()
         payload = {
             "model": self.model_name,
             "messages": self.history,
@@ -85,22 +94,11 @@ class Chatter:
         }
         full_response = []
         async for chunk in SSEClient.send_sse(
-            url=self.provider["url"],
+            url=self.url,
             payload=payload,
             api_key=self.provider["api_key"],
         ):
             yield chunk
             full_response.append(chunk)
-        full_response = "".join(full_response)
-        self.add_assistant_message(full_response)
-        logger.debug(f"assistant message:\n{full_response}")
-        return full_response
 
-
-if __name__ == "__main__":
-    # Example usage
-    chatter = Chatter(
-        provider="deepseek", model_name="example_model", system_prompt="Hello!"
-    )
-    chatter.add_salon_cache("user", "Hello, how are you?")
-    chatter.get_salon_cache()
+        self._add_assistant_message("".join(full_response))

@@ -3,20 +3,73 @@ semaphore: 30
 template:
   salon_cache:
     prefix: |
-      Here's a summary of the recent conversation (in order of speaking):\n
+      Here's a summary of the recent conversation (in order of speaking):
+
+      ---
     speaker: |
-      {speaker} said:\n\n{message}\n\n---\n\n
+
+      {speaker} said:
+
+      {message}
+
+      ---
     suffix: |
       Based on the above and the main topic, what are your thoughts now? Please state your ideas or opinions directly.
+  
+  system_prompt:
+    prefix: |
+      You are {role} a multi-agent discussion. Your personality:
+
+      {role_prompt}
+
+      Other participants:
+
+      ---
+    chatter: |
+
+      {role} served as:
+
+      {role_prompt}
+
+      ---
+    suffix: |
+
+      Guidelines:
+      1. Keep responses concise and in-character.
+      1. Focus on your perspective.
+      1. If no relevant input, say 'Pass' or 'No comment'.
+  
+  hoster_prompt:
+    prefix: |
+      You are {role} a multi-agent discussion. Your personality:
+
+      {role_prompt}
+
+      Other participants:
+
+      ---
+    chatter: |
+
+      {role} served as:
+
+      {role_prompt}
+
+      ---
+    suffix: |
+
+      Guidelines:
+      1. Keep responses concise and in-character.
+      1. Focus on your perspective.
+      1. If no relevant input, say 'Pass' or 'No comment'.
 
 # p: &p win-gaming
 # m: &m qwen
 
-# p: &p siliconflow
-# m: &m Pro/deepseek-ai/DeepSeek-R1
+p: &p siliconflow
+m: &m Pro/THUDM/glm-4-9b-chat
 
-p: &p deepseek
-m: &m deepseek-chat
+# p: &p deepseek
+# m: &m deepseek-chat
 
 # p: &p gemini
 # m: &m gemini-2.0-flash
@@ -36,3 +89,14 @@ chatters:
     system_prompt: 你是一位物理学家，专注于研究宇宙的基本定律和物质的本性。你所说每句话都有物理基础，你不会编造术语。
     temperature: 0
     top_p: 0.95
+
+
+hoster:
+  name: "主持人"
+  provider: *p
+  model_name: *m
+  system_prompt: |
+    你是这场讨论的主持人
+  temperature: 1.5
+  top_p: 0.95
+

@@ -6,7 +6,6 @@ from typing import Any, AsyncGenerator, Dict, List, Tuple
 import aiohttp_client
 import gradio as gr
 from loguru import logger
-
 from config import settings
 
 

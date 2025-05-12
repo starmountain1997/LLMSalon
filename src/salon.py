@@ -1,8 +1,7 @@
 from collections import OrderedDict
 from chatter import Chatter
-from typing import Dict, List
+from typing import Dict
 from config import settings
-from loguru import logger
 
 
 class Salon:
@@ -10,16 +9,114 @@ class Salon:
         self._chatters: OrderedDict[str, Chatter] = OrderedDict()
         chatters_cfg = settings.chatters
         for name, cfg in chatters_cfg.items():
+            system_prompt = self._genereate_system_prompt(name, chatters_cfg)
+
             self._chatters[name] = Chatter(
                 provider=cfg.provider,
                 model_name=cfg.model_name,
-                system_prompt=cfg.system_prompt,
-                temperature=cfg.temperature,
-                top_p=cfg.top_p,
-                max_tokens=cfg.max_tokens,
-                presence_penalty=cfg.presence_penalty,
-                frequency_penalty=cfg.frequency_penalty,
+                system_prompt=system_prompt,
+                **{
+                    k: v
+                    for k, v in cfg.items()
+                    if k not in ["model_name", "system_prompt", "provider"]
+                },
             )
-            logger.info(
-                f"Chatter {name} initialized with model {cfg.model_name} and provider {cfg.provider}"
-            )
+          
+
+        hoster_cfg = settings.hoster
+        system_prompt = self._generate_hoster_system_prompt(hoster_cfg, chatters_cfg)
+        self._hoster = (
+            hoster_cfg.name,
+            Chatter(
+                provider=hoster_cfg.provider,
+                model_name=hoster_cfg.model_name,
+                system_prompt=system_prompt,
+                **{
+                    k: v
+                    for k, v in cfg.items()
+                    if k not in ["name", "model_name", "system_prompt", "provider"]
+                },
+            ),
+        )
+       
+
+    @property
+    def topic(self) -> str:
+        return self._topic
+
+    @property
+    def chatters(self) -> Dict[str, Chatter]:
+        return self._chatters
+
+    @property
+    def hoster(self):
+        return self._hoster[1]
+
+    @property
+    def hoster_name(self):
+        return self._hoster[0]
+
+    @staticmethod
+    def _generate_hoster_system_prompt(hoster_cfg: Dict, chatters_cfg: Dict):
+        prompt_template = settings.template.hoster_prompt
+        system_prompt = prompt_template.prefix.format(
+            role=hoster_cfg.name, role_prompt=hoster_cfg.system_prompt
+        )
+        participants = [
+            prompt_template.chatter.format(role=role, role_prompt=cfg.system_prompt)
+            for role, cfg in chatters_cfg.items()
+        ]
+        system_prompt += "".join(participants)
+        system_prompt += prompt_template.suffix.format()
+        return system_prompt
+
+    @staticmethod
+    def _genereate_system_prompt(
+        name: str,
+        chatters_cfg: Dict,
+    ) -> str:
+        prompt_template = settings.template.system_prompt
+        system_prompt = prompt_template.prefix.format(
+            role=name, role_prompt=chatters_cfg[name].system_prompt
+        )
+        participants = [
+            prompt_template.chatter.format(role=role, role_prompt=cfg.system_prompt)
+            for role, cfg in chatters_cfg.items()
+            if role != name
+        ]
+
+        system_prompt += "".join(participants)
+        system_prompt += prompt_template.suffix.format()
+        return system_prompt
+
+    async def chatting(self, topic: str, rounds: int = 10):
+        for _, chatter in self._chatters.items():
+            chatter.add_salon_cache(self.hoster_name, topic)
+
+        for i in range(rounds):
+            for speaker_name, speaker in self.chatters.items():
+                current_utterance = ""
+                async for piece in speaker.speaking():
+                    current_utterance += piece
+
+                for k, v_chatter in self._chatters.items():
+                    if k == speaker_name:
+                        continue
+                    v_chatter.add_salon_cache(speaker_name, current_utterance)
+                self.hoster.add_salon_cache(speaker_name, current_utterance)
+            hoster_utterance = ""
+            async for piece in self.hoster.speaking():
+                hoster_utterance += piece
+            for k, v_chatter in self._chatters.items():
+                v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
+
+
+async def main():
+    salon = Salon()
+    await salon.chatting("今晚是笑话之夜！", 2)
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
