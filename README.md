@@ -5,7 +5,7 @@ LLMSalon 使用大语言模型进行群聊
 
 ## 运行
 
-1. 确保已安装Python 3.8+
+1. 确保已安装Python 3.13+
 2. 克隆本项目：
    ```bash
    git clone https://github.com/yourusername/LLMSalon.git
