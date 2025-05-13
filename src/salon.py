@@ -96,7 +96,6 @@ class Salon:
 
         for i in range(settings.rounds):
             yield ("new_turn", i)
-            logger.info(i)
             for speaker_name, speaker in self.chatters.items():
                 yield ("speaker_turn", speaker_name)
                 current_utterance = ""
