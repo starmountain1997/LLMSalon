@@ -1,8 +1,6 @@
 from collections import OrderedDict
 from typing import Any, AsyncGenerator, Dict, Tuple
 
-from loguru import logger
-
 from chatter import Chatter
 from config import settings
 

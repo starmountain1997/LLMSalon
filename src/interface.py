@@ -56,7 +56,7 @@ async def run_salon_gradio():
                 chat_history[-1] = (chat_history[-1][0], foldable_current_cot)
                 yield chat_history
             elif event_type == "new_turn":
-                current_turn = data+1
+                current_turn = data + 1
                 yield (
                     chat_history,
                     f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
@@ -80,7 +80,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     with gr.Row():
         run_button = gr.Button("开始讨论", variant="primary", scale=1)
-
 
     run_button.click(
         fn=run_salon_gradio,

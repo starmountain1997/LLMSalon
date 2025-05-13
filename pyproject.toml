@@ -14,4 +14,5 @@ dependencies = [
     "richuru>=0.1.1",
     "ruff>=0.11.8",
     "ty>=0.0.0a7",
+    "watchdog>=6.0.0",
 ]
