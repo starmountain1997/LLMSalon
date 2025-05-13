@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from typing import Any, AsyncGenerator, Dict, Tuple
 
+from loguru import logger
+
 from chatter import Chatter
 from config import settings
 
@@ -88,17 +90,17 @@ class Salon:
         system_prompt += prompt_template.suffix.format()
         return system_prompt
 
-    async def chatting(
-        self, topic: str, rounds: int = 10
-    ) -> AsyncGenerator[Tuple[str, Any], None]:
+    async def chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
         for _, chatter in self._chatters.items():
-            chatter.add_salon_cache(self.hoster_name, topic)
+            chatter.add_salon_cache(self.hoster_name, settings.topic)
 
-        for i in range(rounds):
+        for i in range(settings.rounds):
+            yield ("new_turn", i)
+            logger.info(i)
             for speaker_name, speaker in self.chatters.items():
                 yield ("speaker_turn", speaker_name)
                 current_utterance = ""
-                async for piece in speaker.speaking(i, rounds):
+                async for piece in speaker.speaking(i, settings.rounds):
                     if piece["type"] == "content":
                         yield ("content_piece", piece["data"])
                         current_utterance += piece["data"]
@@ -122,7 +124,8 @@ class Salon:
                 elif piece["type"] == "reasoning":
                     if settings.show_hoster:
                         yield ("reasoning_piece", piece["data"])
-            if "任务完成" in hoster_utterance:
+            if "<|任务完成|>" in hoster_utterance:
+                yield ("new_turn", -1)
                 break
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
