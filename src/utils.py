@@ -1,11 +1,14 @@
 import asyncio
 import json
+import os.path as osp
 from typing import AsyncGenerator, Dict
 
 import aiohttp_client
 from loguru import logger
 
 from config import settings
+
+PROJECT_ROOT = osp.dirname(osp.dirname(osp.abspath(__file__)))
 
 
 class SSEClient:
@@ -74,7 +77,3 @@ class SSEClient:
             except Exception as e:
                 logger.error(f"SSE request failed: {str(e)}")
                 raise
-
-
-if __name__ == "__main__":
-    pass

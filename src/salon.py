@@ -126,4 +126,3 @@ class Salon:
                 break
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
-
