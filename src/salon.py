@@ -1,6 +1,7 @@
 from collections import OrderedDict
-from chatter import Chatter
 from typing import Any, AsyncGenerator, Dict, Tuple
+
+from chatter import Chatter
 from config import settings
 
 
@@ -126,13 +127,3 @@ class Salon:
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
 
-
-async def main():
-    salon = Salon()
-    await salon.chatting("今晚是笑话之夜！", 2)
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

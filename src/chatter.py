@@ -1,8 +1,7 @@
 from typing import AsyncGenerator, Dict, List
 
-from utils import SSEClient
 from config import settings
-from urllib.parse import urljoin
+from utils import SSEClient
 
 
 class Chatter:

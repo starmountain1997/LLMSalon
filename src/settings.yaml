@@ -1,11 +1,6 @@
 semaphore: 30
 show_hoster: true
 
-providers:
-  deepseek:
-    api_key: sk-xxxxxxx # 修改这里
-    url: https://api.deepseek.com/v1/chat/completions
-
 template:
   salon_cache:
     prefix: |

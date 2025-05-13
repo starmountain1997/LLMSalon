@@ -1,9 +1,10 @@
-from typing import List, Tuple
+import html
+
 import gradio as gr
+from loguru import logger
+
 from config import settings
 from salon import Salon
-from loguru import logger
-import html
 
 
 async def run_salon_gradio(topic: str, rounds: int):
@@ -54,16 +55,11 @@ async def run_salon_gradio(topic: str, rounds: int):
 
 def main():
     with gr.Blocks(theme=gr.themes.Soft()) as demo:
-        gr.Markdown("# Multi-Agent Discussion Salon 🤖💬")
+        gr.Markdown("# LLM 沙龙🤖💬")
         gr.Markdown(
-            "Enter a topic and watch the agents discuss it. Based on configured personas and mock API responses."
+            "输入一个主题，观看LLM讨论它。"
         )
 
-        topic_display_markdown = gr.Markdown(
-            value="",
-            label="Discussion Topic Header",
-            elem_id="topic-header-markdown",
-        )
 
         chatbot_display = gr.Chatbot(
             label="Conversation Log",
@@ -74,13 +70,13 @@ def main():
 
         with gr.Row():
             topic = gr.Textbox(
-                label="Discussion Topic (Start Prompt)",
+                label="讨论主题",
                 lines=3,
                 value=settings.topic,
                 scale=3,
             )
             rounds = gr.Number(
-                label="Number of Rounds",
+                label="讨论轮次",
                 value=settings.rounds,
                 minimum=1,
                 maximum=100,
@@ -88,7 +84,7 @@ def main():
                 scale=1,
             )
 
-            run_button = gr.Button("Start Discussion", variant="primary", scale=1)
+            run_button = gr.Button("开始讨论", variant="primary", scale=1)
 
         run_button.click(
             fn=run_salon_gradio,
