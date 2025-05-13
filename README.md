@@ -24,3 +24,7 @@ LLMSalon 使用大语言模型进行群聊
 ## 配置
 
 编辑 `src/settings.yaml` 可配置模型及prompt。
+
+## TODO
+
+1. 热更新
