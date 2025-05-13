@@ -28,3 +28,4 @@ LLMSalon 使用大语言模型进行群聊
 ## TODO
 
 1. 热更新
+2. function call停机
