@@ -10,7 +10,11 @@ from config import settings
 from salon import Salon
 
 
+stop_flag = False
+
 async def run_salon_gradio():
+    global stop_flag
+    stop_flag = False
     salon = Salon()
     chat_history = []
     current_speaker = None
@@ -19,6 +23,9 @@ async def run_salon_gradio():
 
     try:
         async for event_type, data in salon.chatting():
+            if stop_flag:
+                yield (chat_history, "# LLM 沙龙已停止")
+                return
             if event_type == "speaker_turn":
                 current_speaker = str(data)
                 speaker_label = f"✨ **{current_speaker}** ✨"
@@ -101,6 +108,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     with gr.Row():
         run_button = gr.Button("开始讨论", variant="primary",)
+        stop_button = gr.Button("停止讨论", variant="stop",)
         save_button = gr.Button("保存历史", variant="secondary",)
     
     save_status = gr.Markdown()
@@ -114,6 +122,16 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         fn=lambda history: save_chat_history(history),
         inputs=[chatbot_display],
         outputs=[save_status],
+    )
+    
+    def stop_discussion():
+        global stop_flag
+        stop_flag = True
+        return "# LLM 沙龙已停止"
+    
+    stop_button.click(
+        fn=stop_discussion,
+        outputs=[title],
     )
 
 
