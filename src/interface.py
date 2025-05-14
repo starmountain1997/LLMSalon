@@ -1,7 +1,7 @@
 import html
+import os
 import pickle
 from datetime import datetime
-import os
 
 import gradio as gr
 from loguru import logger
@@ -9,8 +9,8 @@ from loguru import logger
 from config import settings
 from salon import Salon
 
-
 stop_flag = False
+
 
 async def run_salon_gradio():
     global stop_flag
@@ -81,17 +81,17 @@ def save_chat_history(history):
     """保存聊天历史到pkl文件"""
     if not history:
         return "没有聊天历史可保存"
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"chat_history_{timestamp}.pkl"
-    
+
     # 确保history目录存在
     os.makedirs("history", exist_ok=True)
     filepath = os.path.join("history", filename)
-    
+
     with open(filepath, "wb") as f:
         pickle.dump(history, f)
-    
+
     return f"聊天历史已保存到 {filepath}"
 
 
@@ -107,10 +107,19 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     )
 
     with gr.Row():
-        run_button = gr.Button("开始讨论", variant="primary",)
-        stop_button = gr.Button("停止讨论", variant="stop",)
-        save_button = gr.Button("保存历史", variant="secondary",)
-    
+        run_button = gr.Button(
+            "开始讨论",
+            variant="primary",
+        )
+        stop_button = gr.Button(
+            "停止讨论",
+            variant="stop",
+        )
+        save_button = gr.Button(
+            "保存历史",
+            variant="secondary",
+        )
+
     save_status = gr.Markdown()
 
     run_button.click(
@@ -123,12 +132,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         inputs=[chatbot_display],
         outputs=[save_status],
     )
-    
+
     def stop_discussion():
         global stop_flag
         stop_flag = True
         return "# LLM 沙龙已停止"
-    
+
     stop_button.click(
         fn=stop_discussion,
         outputs=[title],
@@ -136,6 +145,4 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
 
 if __name__ == "__main__":
-    
-
     demo.queue().launch()

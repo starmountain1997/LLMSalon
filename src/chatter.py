@@ -1,7 +1,9 @@
 from typing import AsyncGenerator, Dict, List
 
+from rich.markdown import Markdown
+
 from config import settings
-from utils import SSEClient
+from utils import SSEClient, logger
 
 
 class Chatter:
@@ -27,6 +29,10 @@ class Chatter:
         ]
 
         self._salon_cache: List[Dict[str, str]] = []
+        logger.info(
+            f"initialized chatter with system prompt:\n{system_prompt}",
+            rich=Markdown(system_prompt),
+        )
 
     @property
     def provider(self) -> Dict[str, str]:
@@ -54,7 +60,9 @@ class Chatter:
     def _add_assistant_message(self, message: str):
         self.history.append({"role": "assistant", "content": message})
 
-    def _add_user_message(self, current_round: int = None, total_rounds: int = None):
+    def _add_user_message(self, current_round: int, total_rounds: int):
+        logger.debug(current_round)
+        logger.debug(total_rounds)
         self.history.append(
             {
                 "role": "user",
@@ -66,9 +74,7 @@ class Chatter:
     def url(self) -> str:
         return self.provider["url"]
 
-    def get_salon_cache(
-        self, current_round: int = None, total_rounds: int = None
-    ) -> str:
+    def get_salon_cache(self, current_round: int, total_rounds: int) -> str:
         salon_cache_template = settings.template.salon_cache
         message_str = salon_cache_template.prefix
         for speaker, message in self._salon_cache:
@@ -76,16 +82,16 @@ class Chatter:
                 speaker=speaker, message=message
             )
         message_str += salon_cache_template.suffix
-        if current_round and total_rounds:
-            message += salon_cache_template.round_index.format(
-                current_round=current_round, total_rounds=total_rounds
-            )
+        message += salon_cache_template.round_index.format(
+            current_round=current_round, total_rounds=total_rounds
+        )
 
         self._salon_cache.clear()
+        logger.info(f"salon cache:\n{message_str}", rich=Markdown(message_str))
         return message_str
 
     async def speaking(
-        self, current_round: int = None, total_rounds: int = None
+        self, current_round: int, total_rounds: int
     ) -> AsyncGenerator[str, None]:
         self._add_user_message(current_round, total_rounds)
         payload = {

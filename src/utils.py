@@ -4,6 +4,10 @@ import os.path as osp
 from typing import AsyncGenerator, Dict
 
 import aiohttp_client
+import richuru
+from rich import print_json
+
+richuru.install()
 from loguru import logger
 
 from config import settings
@@ -65,12 +69,16 @@ class SSEClient:
                                     if isinstance(error_info, dict)
                                     else str(error_info)
                                 )
-                                logger.error(f"API Error: {error_message}")
+                                logger.error(
+                                    f"API Error: {error_message}",
+                                    rich=f"API Error: {print_json(error_message)}",
+                                )
                                 raise Exception(f"API Error: {error_message}")
 
                         except json.JSONDecodeError as e:
                             logger.warning(
-                                f"JSON decode error: {e}, data: {json_data_str}"
+                                f"JSON decode error: {e}, data: {json_data_str}",
+                                rich=f"JSON decode error: {e}, data: {print_json(json_data_str)}",
                             )
                             continue
 

@@ -59,7 +59,9 @@ class Salon:
     def _generate_hoster_system_prompt(hoster_cfg: Dict, chatters_cfg: Dict):
         prompt_template = settings.template.hoster_prompt
         system_prompt = prompt_template.prefix.format(
-            role=hoster_cfg.name, role_prompt=hoster_cfg.system_prompt
+            role=hoster_cfg.name,
+            role_prompt=hoster_cfg.system_prompt,
+            topic=settings.topic,
         )
         participants = [
             prompt_template.chatter.format(role=role, role_prompt=cfg.system_prompt)
@@ -76,7 +78,9 @@ class Salon:
     ) -> str:
         prompt_template = settings.template.system_prompt
         system_prompt = prompt_template.prefix.format(
-            role=name, role_prompt=chatters_cfg[name].system_prompt
+            role=name,
+            role_prompt=chatters_cfg[name].system_prompt,
+            topic=settings.topic,
         )
         participants = [
             prompt_template.chatter.format(role=role, role_prompt=cfg.system_prompt)
@@ -89,8 +93,8 @@ class Salon:
         return system_prompt
 
     async def chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
-        for _, chatter in self._chatters.items():
-            chatter.add_salon_cache(self.hoster_name, settings.topic)
+        # for _, chatter in self._chatters.items():
+        #     chatter.add_salon_cache(self.hoster_name, settings.topic)
 
         for i in range(settings.rounds):
             yield ("new_turn", i)
@@ -111,13 +115,11 @@ class Salon:
             hoster_utterance = ""
             if settings.show_hoster:
                 yield ("speaker_turn", self.hoster_name)
-            async for piece in self.hoster.speaking():
+            async for piece in self.hoster.speaking(i, settings.rounds):
                 if piece["type"] == "content":
                     if settings.show_hoster:
                         yield ("content_piece", piece["data"])
                     hoster_utterance += piece["data"]
-                    # 检测是否包含任务完成标记
-
                 elif piece["type"] == "reasoning":
                     if settings.show_hoster:
                         yield ("reasoning_piece", piece["data"])

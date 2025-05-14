@@ -4,14 +4,14 @@ import subprocess
 import sys
 import time
 
+from loguru import logger
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from loguru import logger
 
+from config import SETTING_PATH
 from utils import PROJECT_ROOT
 
 GRADIO_COMMAND = [sys.executable, "interface.py"]
-YAML_FILE_PATH = os.path.join(PROJECT_ROOT, "src/settings.yaml")
 
 current_process = None
 
@@ -116,9 +116,8 @@ class YamlChangeHandler(FileSystemEventHandler):
 
 # --- 主程序 ---
 if __name__ == "__main__":
-    yaml_dir = os.path.dirname(YAML_FILE_PATH)
-    yaml_filename = os.path.basename(YAML_FILE_PATH)
-
+    yaml_dir = os.path.dirname(SETTING_PATH)
+    yaml_filename = os.path.basename(SETTING_PATH)
 
     # 检查 Gradio 命令中的文件是否存在（如果它是 Python 文件）
     if len(GRADIO_COMMAND) > 2 and GRADIO_COMMAND[-1].endswith(".py"):
@@ -127,13 +126,11 @@ if __name__ == "__main__":
             print(f"警告: Gradio 脚本 '{interface_file}' 未找到。请确保路径正确。")
 
     # 检查 YAML 文件是否存在，如果不存在，提示但继续监控（可能稍后创建）
-    if not os.path.exists(YAML_FILE_PATH):
-        raise Exception(
-            f"警告: YAML 文件 '{YAML_FILE_PATH}' 当前不存在"
-        )
+    if not os.path.exists(SETTING_PATH):
+        raise Exception(f"警告: YAML 文件 '{SETTING_PATH}' 当前不存在")
 
     # 创建事件处理器和观察者
-    event_handler = YamlChangeHandler(YAML_FILE_PATH)
+    event_handler = YamlChangeHandler(SETTING_PATH)
     observer = Observer()
     # 监控 YAML 文件所在的目录
     observer.schedule(event_handler, yaml_dir, recursive=False)
