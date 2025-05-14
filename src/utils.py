@@ -18,7 +18,7 @@ PROJECT_ROOT = osp.dirname(osp.dirname(osp.abspath(__file__)))
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
     tools = [
-        { 
+        {
             "type": "function",
             "function": {
                 "name": "mark_task_as_completed",

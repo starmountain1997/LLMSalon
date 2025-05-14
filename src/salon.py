@@ -1,3 +1,4 @@
+import json
 from collections import OrderedDict
 from typing import Any, AsyncGenerator, Dict, Tuple
 
@@ -127,12 +128,14 @@ class Salon:
                     if (
                         self.hoster._function_calling["function"]["name"]
                         == "mark_task_as_completed"
-                        and self.hoster._function_calling["function"]["arguments"][
-                            "all_steps_done"
-                        ]
                     ):
-                        task_completed = True
-                except Exception as e:
+                        arguments = json.loads(
+                            self.hoster._function_calling["function"]["arguments"]
+                        )
+                        task_completed = arguments["all_steps_done"]
+                except (
+                    Exception
+                ) as e: 
                     logger.error(self.hoster._function_calling)
                     logger.error(e)
                     task_completed = True
