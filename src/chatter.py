@@ -82,8 +82,8 @@ class Chatter:
                 speaker=speaker, message=message
             )
         message_str += salon_cache_template.suffix
-        message += salon_cache_template.round_index.format(
-            current_round=current_round, total_rounds=total_rounds
+        message_str += salon_cache_template.round_index.format(
+            current_round=current_round+1, total_rounds=total_rounds
         )
 
         self._salon_cache.clear()
