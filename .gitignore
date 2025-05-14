@@ -4,6 +4,9 @@
 
 **/__pycache__
 build/
+
+
 *.egg-info
 *.yaml
 *.yml
+*.pkl

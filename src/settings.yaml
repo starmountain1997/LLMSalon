@@ -54,6 +54,11 @@ template:
       Guidelines:
         1. 回复要简洁并符合角色。
         1. 专注于你的观点。
+        1. 当任务完成时，调用mark_task_as_completed函数：
+           - 参数格式: 
+             * summary: 任务总结(字符串)
+             * all_steps_done: true(布尔值)
+           - 仅当所有步骤都完成时才调用
 
   hoster_prompt:
     prefix: |
@@ -82,6 +87,9 @@ template:
       Guidelines:
         1. 回复要简洁并符合角色。
         1. 专注于你的观点。
+        1. 当任务完成时，调用mark_task_as_completed函数：
+           - 参数: {"summary":"任务总结","all_steps_done":true}
+           - 仅当所有步骤都完成时才调用
        
 
 chatters:

@@ -23,7 +23,7 @@ async def run_salon_gradio():
 
     try:
         async for event_type, data in salon.chatting():
-            if stop_flag:
+            if stop_flag or event_type == "task_finish":
                 yield (chat_history, "# LLM 沙龙已停止")
                 return
             if event_type == "speaker_turn":

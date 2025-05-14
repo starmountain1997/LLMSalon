@@ -3,6 +3,7 @@ from typing import Any, AsyncGenerator, Dict, Tuple
 
 from chatter import Chatter
 from config import settings
+from utils import logger
 
 
 class Salon:
@@ -93,9 +94,6 @@ class Salon:
         return system_prompt
 
     async def chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
-        # for _, chatter in self._chatters.items():
-        #     chatter.add_salon_cache(self.hoster_name, settings.topic)
-
         for i in range(settings.rounds):
             yield ("new_turn", i)
             for speaker_name, speaker in self.chatters.items():
@@ -113,9 +111,10 @@ class Salon:
                     v_chatter.add_salon_cache(speaker_name, current_utterance)
                 self.hoster.add_salon_cache(speaker_name, current_utterance)
             hoster_utterance = ""
+            task_completed = False
             if settings.show_hoster:
                 yield ("speaker_turn", self.hoster_name)
-            async for piece in self.hoster.speaking(i, settings.rounds):
+            async for piece in self.hoster.speaking(i, settings.rounds, True):
                 if piece["type"] == "content":
                     if settings.show_hoster:
                         yield ("content_piece", piece["data"])
@@ -123,8 +122,22 @@ class Salon:
                 elif piece["type"] == "reasoning":
                     if settings.show_hoster:
                         yield ("reasoning_piece", piece["data"])
-            if "<|任务完成|>" in hoster_utterance:
-                yield ("new_turn", -1)
+            if self.hoster._function_calling:
+                try:
+                    if (
+                        self.hoster._function_calling["function"]["name"]
+                        == "mark_task_as_completed"
+                        and self.hoster._function_calling["function"]["arguments"][
+                            "all_steps_done"
+                        ]
+                    ):
+                        task_completed = True
+                except Exception as e:
+                    logger.error(self.hoster._function_calling)
+                    logger.error(e)
+                    task_completed = True
+            if task_completed:
+                yield ("task_finish", None)
                 break
             for k, v_chatter in self._chatters.items():
                 v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)

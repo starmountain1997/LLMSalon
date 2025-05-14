@@ -4,19 +4,38 @@ import os.path as osp
 from typing import AsyncGenerator, Dict
 
 import aiohttp_client
-import richuru
-from rich import print_json
-
-richuru.install()
+# import richuru
 from loguru import logger
 
 from config import settings
+
+# richuru.install()
+
 
 PROJECT_ROOT = osp.dirname(osp.dirname(osp.abspath(__file__)))
 
 
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
+    tools = [
+        { 
+            "type": "function",
+            "function": {
+                "name": "mark_task_as_completed",
+                "description": "Call this function when the task is fully completed.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "all_steps_done": {
+                            "type": "boolean",
+                            "description": "Confirms all steps are done.",
+                        },
+                    },
+                    "required": ["all_steps_done"],
+                },
+            },
+        }
+    ]
 
     @classmethod
     async def send_sse(
@@ -51,7 +70,12 @@ class SSEClient:
                             if "choices" in chunk and chunk["choices"]:
                                 delta = chunk["choices"][0].get("delta", {})
 
-                                if delta.get("content"):
+                                if "tool_calls" in delta and delta["tool_calls"]:
+                                    yield {
+                                        "type": "tool_calls",
+                                        "data": delta["tool_calls"],
+                                    }
+                                elif delta.get("content"):
                                     yield {"type": "content", "data": delta["content"]}
                                 elif (
                                     "reasoning_content" in delta
@@ -70,15 +94,15 @@ class SSEClient:
                                     else str(error_info)
                                 )
                                 logger.error(
-                                    f"API Error: {error_message}",
-                                    rich=f"API Error: {print_json(error_message)}",
+                                    f"API Error:\n{json.dumps(error_message, indent=4)}"
                                 )
-                                raise Exception(f"API Error: {error_message}")
+                                raise Exception(
+                                    f"API Error:\n{json.dumps(error_message, indent=4)}"
+                                )
 
                         except json.JSONDecodeError as e:
                             logger.warning(
-                                f"JSON decode error: {e}, data: {json_data_str}",
-                                rich=f"JSON decode error: {e}, data: {print_json(json_data_str)}",
+                                f"JSON decode error: {e}, data:\n{json.dumps(json_data_str, indent=4)}"
                             )
                             continue
 

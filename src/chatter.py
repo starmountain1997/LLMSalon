@@ -29,6 +29,7 @@ class Chatter:
         ]
 
         self._salon_cache: List[Dict[str, str]] = []
+        self._function_calling: List[Dict] = []
         logger.info(
             f"initialized chatter with system prompt:\n{system_prompt}",
             rich=Markdown(system_prompt),
@@ -61,8 +62,6 @@ class Chatter:
         self.history.append({"role": "assistant", "content": message})
 
     def _add_user_message(self, current_round: int, total_rounds: int):
-        logger.debug(current_round)
-        logger.debug(total_rounds)
         self.history.append(
             {
                 "role": "user",
@@ -83,7 +82,7 @@ class Chatter:
             )
         message_str += salon_cache_template.suffix
         message_str += salon_cache_template.round_index.format(
-            current_round=current_round+1, total_rounds=total_rounds
+            current_round=current_round + 1, total_rounds=total_rounds
         )
 
         self._salon_cache.clear()
@@ -91,7 +90,7 @@ class Chatter:
         return message_str
 
     async def speaking(
-        self, current_round: int, total_rounds: int
+        self, current_round: int, total_rounds: int, if_hoster: bool = False
     ) -> AsyncGenerator[str, None]:
         self._add_user_message(current_round, total_rounds)
         payload = {
@@ -101,9 +100,12 @@ class Chatter:
             "top_p": self._top_p,
             "max_tokens": self._max_tokens,
             "stream": True,
+            "tools": SSEClient.tools if if_hoster else None,
         }
         content_response = []
         reasoning_response = []
+        tool_calls_response: Dict = None
+
         async for chunk in SSEClient.send_sse(
             url=self.url,
             payload=payload,
@@ -112,8 +114,26 @@ class Chatter:
             if chunk["type"] == "content":
                 content_response.append(chunk["data"])
             elif chunk["type"] == "reasoning":
-                # 可以选择不yield reasoning内容，或做特殊处理
                 reasoning_response.append(chunk["data"])
+            elif chunk["type"] == "tool_calls":
+                if not tool_calls_response:
+                    tool_calls_response = chunk["data"][0]
+                else:
+                    tool_calls_response["function"]["arguments"] = tool_calls_response[
+                        "function"
+                    ].get("arguments", "") + chunk["data"][0]["function"].get(
+                        "arguments", ""
+                    )
             yield chunk
 
-        self._add_assistant_message("".join(content_response))
+        if tool_calls_response:
+            self._function_calling = tool_calls_response
+
+        # 更新历史记录
+        assistant_message = "".join(content_response)
+        self._history.append(
+            {
+                "role": "assistant",
+                "content": assistant_message,
+            }
+        )
