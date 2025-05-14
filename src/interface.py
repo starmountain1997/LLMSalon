@@ -64,7 +64,10 @@ async def run_salon_gradio():
 </details>
 """
                 chat_history[-1] = (chat_history[-1][0], foldable_current_cot)
-                yield chat_history
+                yield (
+                    chat_history,
+                    f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
+                )
             elif event_type == "new_turn":
                 current_turn = data + 1
                 yield (
