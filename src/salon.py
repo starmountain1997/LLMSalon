@@ -90,13 +90,8 @@ class Salon:
     async def chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
         for i in range(settings.rounds):
             yield ("new_turn", i)
-            hoster_utterance = ""
-            async for piece in self.hoster.speaking(i):
-                if piece["type"] == "content":
-                    yield ("content_piece", piece["data"])
-                    hoster_utterance += piece["data"]
-                elif piece["type"] == "reasoning":
-                    yield ("reasoning_piece", piece["data"])
+            async for piece in self.hoster.speaking(i):# FIXME: 这里不会有任何数据
+                yield("hoster_determing",None)
             if self.hoster.function_called_name == "mark_task_as_completed":
                 arguments = json.loads(self.hoster.function_called_arguments)
                 if arguments["all_steps_done"] is True:
@@ -105,11 +100,13 @@ class Salon:
             elif self.hoster.function_called_name == "determine_next_speaker":
                 arguments = json.loads(self.hoster.function_called_arguments)
                 next_speaker_name = arguments["next_speaker_name"]
-                reason=arguments["reason"]
+                reason=arguments.get("reason")
                 next_speaker = self.chatters.get(next_speaker_name)
                 if next_speaker is None:
                     raise Exception(f"{next_speaker} is not valid speaker")
                 next_speaker.add_salon_cache("hoster",reason)
+                yield("next_speaker",next_speaker_name)
+                yield("next_speak_reason",reason)
 
             yield ("speaker_turn", next_speaker_name)
             current_utterance = ""

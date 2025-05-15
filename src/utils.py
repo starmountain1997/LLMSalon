@@ -13,7 +13,7 @@ from config import settings
 
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
-    chatter_tools = []
+    chatter_tools = None
     hoster_tools = [
         {
             "type": "function",
@@ -49,7 +49,7 @@ class SSEClient:
                             "description": "A brief explanation for choosing this particular speaker to speak next.",
                         },
                     },
-                    "required": ["next_speaker_name", "reasoning"],
+                    "required": ["next_speaker_name", "reason"],
                 },
             },
         },
