@@ -31,9 +31,13 @@ class Chatter:
         self._salon_cache: List[Dict[str, str]] = []
         self._function_calling: List[Dict] = []
         logger.info(
-            f"initialized chatter with system prompt:\n{system_prompt}",
+            f"initialized with system prompt:\n{system_prompt}",
             rich=Markdown(system_prompt),
         )
+
+    @property
+    def if_hoster(self) -> bool:
+        return False
 
     @property
     def provider(self) -> Dict[str, str]:
@@ -50,6 +54,18 @@ class Chatter:
     @property
     def history(self) -> List[Dict[str, str]]:
         return self._history
+
+    @property
+    def function_called_name(self) -> List[Dict]:
+        if self._function_calling:
+            return self._function_calling["function"]["name"]
+        return None
+
+    @property
+    def function_called_arguments(self) -> List[Dict]:
+        if self._function_calling:
+            return self._function_calling["function"]["arguments"]
+        return None
 
     @property
     def salon_cache(self) -> List[Dict[str, str]]:
@@ -89,10 +105,8 @@ class Chatter:
         logger.info(f"salon cache:\n{message_str}", rich=Markdown(message_str))
         return message_str
 
-    async def speaking(
-        self, current_round: int, total_rounds: int, if_hoster: bool = False
-    ) -> AsyncGenerator[str, None]:
-        self._add_user_message(current_round, total_rounds)
+    async def speaking(self, current_round: int) -> AsyncGenerator[str, None]:
+        self._add_user_message(current_round, settings.rounds)
         payload = {
             "model": self.model_name,
             "messages": self.history,
@@ -100,7 +114,9 @@ class Chatter:
             "top_p": self._top_p,
             "max_tokens": self._max_tokens,
             "stream": True,
-            "tools": SSEClient.tools if if_hoster else None,
+            "tools": SSEClient.hoster_tools
+            if self.if_hoster
+            else SSEClient.chatter_tools,
         }
         content_response = []
         reasoning_response = []
@@ -137,3 +153,31 @@ class Chatter:
                 "content": assistant_message,
             }
         )
+
+
+class Hoster(Chatter):
+    def __init__(
+        self,
+        provider,
+        model_name,
+        system_prompt,
+        temperature=0.7,
+        top_p=1,
+        max_tokens=None,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            provider,
+            model_name,
+            system_prompt,
+            temperature,
+            top_p,
+            max_tokens,
+            *args,
+            **kwargs,
+        )
+
+    @property
+    def if_hoster(self) -> bool:
+        return True

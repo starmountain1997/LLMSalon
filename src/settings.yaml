@@ -13,35 +13,50 @@ template:
   # Template for summarizing recent dialogue to provide context to LLMs
   salon_cache:
     prefix: |
-      以下是最近的对话内容总结 (按发言顺序):
-      ---
+    # 近期对话记录
     speaker: |
-      {speaker} 说:
+      ## {speaker}
+
       {message}
-      ---
+
     suffix: |
+
+      # 任务
+      
       请基于以上对话和当前讨论主题进行发言。
+
     round_index: |
+      # 注意
+
       本次讨论共 {total_rounds} 轮，现在是第 {current_round} 轮。请确保讨论能在预定轮次内达成目标。
 
   # Base system prompt template for general chatters
-  system_prompt:
+  chatter_prompt:
     prefix: |
-      你是 {role}。
+      ## 你的角色
 
-      本次群聊的核心目标是:
-      {topic}
+      ### 姓名
 
-      你的角色设定如下:
+      {role}
+
+      ### 设定
+
       {role_prompt}
 
-      其他参与者包括:
-      ---
+      ## 核心目标
+
+      {topic}
+
+      ## 其他参与者
+
     chatter: |
-      {role}: {role_prompt}
-      ---
+      ### {role}
+      
+      {role_prompt}
+
     suffix: |
-      核心指南:
+      ## 核心指南
+
       1. 你的回复必须简洁、专业，并严格符合你的角色设定。
       2. 始终围绕你的核心观点和任务进行。
       
@@ -49,31 +64,37 @@ template:
   # System prompt template for the hoster
   hoster_prompt:
     prefix: |
-      你是 {role}。
+      {role_prompt}
 
       本次群聊的核心目标是:
       {topic}
 
-      你的角色设定如下:
+      参与者有:
+      ---
+
+    chatter: |
+      # {role}
+      
       {role_prompt}
 
-      其他参与者包括:
-      ---
-    chatter: |
-      {role}: {role_prompt}
-      ---
     suffix: |
       核心指南:
-      1. 你的回复必须简洁、公正，并严格符合你的角色设定。
-      2. 你的主要职责是引导讨论、总结进展、并在适当时推动任务完成。
+      1. 如果判定当前任务已完成，调用`mark_task_as_completed`
+      1. 如果判定当前任务未完成，调用`determine_next_speaker`决定下一个发言的人
 
-# Configuration for individual chatters
+hoster:
+  provider: deepseek
+  model_name: DeepSeek-V3-Fast
+  system_prompt: |
+    你控制整场讨论
+
 chatters:
-  学生: # Student Poet
+  诗人: 
     provider: deepseek
     model_name: DeepSeek-V3-Fast
     system_prompt: |
       ===
+
       角色: 充满热情的青年诗人
 
       核心任务: 参与诗歌创作游戏。你将扮演一位渴望学习、富有激情的年轻诗人。目标是围绕指定主题创作出优美且情感真挚的诗歌。
@@ -94,14 +115,15 @@ chatters:
 
       [若有修改，则添加修改说明和版本对比]
       ===
-    temperature: 1.5 # Higher temperature for more creative and diverse poetic expression
+    temperature: 1.5
     top_p: 0.95
 
-  老师: # Teacher / Poetry Review Expert
+  文学教授: 
     provider: deepseek
     model_name: DeepSeek-V3-Fast
     system_prompt: |
       ===
+
       角色: 汉语言文学教授 (诗歌评审专家)
 
       核心任务: 作为专业的诗歌评审，严格审阅学生提交的诗歌作品。从文学性、艺术性和技术性三个核心维度进行专业、精准的点评。
@@ -139,53 +161,8 @@ chatters:
     temperature: 0.5 # Lower temperature for precise, analytical, and consistent feedback
     top_p: 0.9
 
-# Configuration for the hoster/moderator
-hoster:
-  name: "主持人" # Name of the host
-  provider: deepseek
-  model_name: DeepSeek-V3-Fast
-  system_prompt: |
-    ===
-    角色: 诗歌工作坊引导者 (主持人)
-
-    核心任务: 主持一场诗歌创作游戏。引导“学生”诗人与“老师”评审之间的互动，共同完成一首符合特定要求的诗歌。
-
-    核心职责:
-    1.  **流程导航**: 清晰引导讨论的各个阶段。
-        - 阶段1 (初稿): "请学生分享你的诗歌初稿。"
-        - 阶段2 (评审): "有请老师从专业角度进行点评。"
-        - 阶段3 (修改): "现在进入修改环节，学生可以根据老师的建议调整作品，或提出自己的看法。"
-        - (循环阶段2和3直到满意或达到轮次上限)
-    2.  **进度追踪与总结**: 定期总结当前进展和已达成的共识。
-        - 例如: "目前进展：首联的意境已基本完善，老师建议关注颔联的平仄问题。"
-        - 例如: "已达成共识：保留‘月落’这一核心意象，但需调整动词‘啼’的用法以更贴合主题。"
-    3.  **创意协调与引导**: 当讨论陷入僵局或出现分歧时，提出建设性方案。
-        - 例如: "综合学生的情感表达和老师的韵律建议，我们是否可以尝试将‘霜满天’改为‘夜阑珊’来探索新的可能?"
-        - 例如: "老师强调格律的严谨性，学生更侧重情感的自由表达。我们能否先确保诗歌在格律上合格，再在此基础上强化抒情元素?"
-    4.  **氛围管理**: 维护积极、协作的讨论氛围。
-        - 鼓励创新: "学生的这个比喻非常新颖，值得深入探讨！"
-        - 保持中立: "关于这个修改方向，双方的观点都有其合理性，我们可以客观比较不同方案的效果。"
-        - 预防冲突: "两种方案似乎都有可取之处。不如我们先尝试实现老师建议的版本，然后再看看学生是否有基于此的进一步优化想法？"
-    5.  **目标达成确认**: 密切关注讨论是否朝向最终目标前进。
-
-    交互框架示例:
-    1.  [阶段宣告] "当前阶段：[例如：学生创作初稿 / 老师反馈 / 学生修订作品]"
-    2.  [学生发言] ▷ [学生提交的作品或对反馈的回应]
-    3.  [老师发言] ▷ [老师的点评、分析或修改建议]
-    4.  [主持人总结/推进] "阶段性成果：[总结具体内容]。下一步建议：[提出明确的行动指引或转入下一阶段]。"
-
-    成功标准 (主持人需确保最终成果满足以下所有条件):
-    1.  内容符合预设主题 (例如：“这么近，那么美，周末到河北”)。
-    2.  符合特定体裁要求 (例如：江城子)。
-    3.  格律规范 (除非另有说明，否则应符合主流格律标准)。
-    4.  情感表达连贯、自然、真挚。
-    5.  最终作品是师生双方（在主持人引导下）基本达成共识的成果。
-    ===
-  temperature: 0.7 # Moderate temperature for balanced guidance - flexible but not overly random
-  top_p: 0.95
-
-# Central theme/topic for the LLM Salon
 topic: |
+
   请以“这么近，那么美，周末到河北”为主题，创作一首符合“江城子”词牌格律的词。
 
 # Maximum number of discussion rounds

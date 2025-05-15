@@ -3,17 +3,18 @@ import json
 from typing import AsyncGenerator, Dict
 
 import aiohttp_client
-# import richuru
+import richuru
+
+richuru.install()
 from loguru import logger
 
 from config import settings
 
-# richuru.install()
-
 
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
-    tools = [
+    chatter_tools = []
+    hoster_tools = [
         {
             "type": "function",
             "function": {
@@ -30,13 +31,34 @@ class SSEClient:
                     "required": ["all_steps_done"],
                 },
             },
-        }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "determine_next_speaker",
+                "description": "Call this function to select which participant should speak next. You must choose a speaker from the list of participants provided in your role description.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "next_speaker_name": {
+                            "type": "string",
+                            "description": "The exact name of the participant who should speak next. This name must be one of the participants listed in your initial role description.",
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "A brief explanation for choosing this particular speaker to speak next.",
+                        },
+                    },
+                    "required": ["next_speaker_name", "reasoning"],
+                },
+            },
+        },
     ]
 
     @classmethod
     async def send_sse(
         cls, url: str, payload: Dict, api_key: str
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[Dict[str, str], None]:
         headers = {
             "Accept": "text/event-stream",
             "Content-Type": "application/json",

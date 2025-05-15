@@ -1,45 +1,43 @@
 import json
-from collections import OrderedDict
-from typing import Any, AsyncGenerator, Dict, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
-from chatter import Chatter
+from chatter import Chatter, Hoster
 from config import settings
 from utils import logger
 
 
 class Salon:
     def __init__(self):
-        self._chatters: OrderedDict[str, Chatter] = OrderedDict()
         chatters_cfg = settings.chatters
-        for name, cfg in chatters_cfg.items():
-            system_prompt = self._genereate_system_prompt(name, chatters_cfg)
-
-            self._chatters[name] = Chatter(
+        self._chatters: Dict[str, Chatter] = {
+            name: Chatter(
                 provider=cfg.provider,
                 model_name=cfg.model_name,
-                system_prompt=system_prompt,
+                system_prompt=self._genereate_chatter_system_prompt(name, chatters_cfg),
                 **{
                     k: v
                     for k, v in cfg.items()
                     if k not in ["model_name", "system_prompt", "provider"]
                 },
             )
+            for name, cfg in chatters_cfg.items()
+        }
 
         hoster_cfg = settings.hoster
-        system_prompt = self._generate_hoster_system_prompt(hoster_cfg, chatters_cfg)
-        self._hoster = (
-            hoster_cfg.name,
-            Chatter(
-                provider=hoster_cfg.provider,
-                model_name=hoster_cfg.model_name,
-                system_prompt=system_prompt,
-                **{
-                    k: v
-                    for k, v in cfg.items()
-                    if k not in ["name", "model_name", "system_prompt", "provider"]
-                },
-            ),
+        self._hoster = Hoster(
+            provider=hoster_cfg.provider,
+            model_name=hoster_cfg.model_name,
+            system_prompt=self._generate_hoster_system_prompt(hoster_cfg, chatters_cfg),
+            **{
+                k: v
+                for k, v in hoster_cfg.items()
+                if k not in ["model_name", "system_prompt", "provider"]
+            },
         )
+
+    @property
+    def chatter_list(self) -> List[str]:
+        return list(self.chatters)
 
     @property
     def topic(self) -> str:
@@ -51,17 +49,12 @@ class Salon:
 
     @property
     def hoster(self):
-        return self._hoster[1]
-
-    @property
-    def hoster_name(self):
-        return self._hoster[0]
+        return self._hoster
 
     @staticmethod
     def _generate_hoster_system_prompt(hoster_cfg: Dict, chatters_cfg: Dict):
         prompt_template = settings.template.hoster_prompt
         system_prompt = prompt_template.prefix.format(
-            role=hoster_cfg.name,
             role_prompt=hoster_cfg.system_prompt,
             topic=settings.topic,
         )
@@ -74,11 +67,11 @@ class Salon:
         return system_prompt
 
     @staticmethod
-    def _genereate_system_prompt(
+    def _genereate_chatter_system_prompt(
         name: str,
         chatters_cfg: Dict,
     ) -> str:
-        prompt_template = settings.template.system_prompt
+        prompt_template = settings.template.chatter_prompt
         system_prompt = prompt_template.prefix.format(
             role=name,
             role_prompt=chatters_cfg[name].system_prompt,
@@ -97,48 +90,51 @@ class Salon:
     async def chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
         for i in range(settings.rounds):
             yield ("new_turn", i)
-            for speaker_name, speaker in self.chatters.items():
-                yield ("speaker_turn", speaker_name)
-                current_utterance = ""
-                async for piece in speaker.speaking(i, settings.rounds):
-                    if piece["type"] == "content":
-                        yield ("content_piece", piece["data"])
-                        current_utterance += piece["data"]
-                    elif piece["type"] == "reasoning":
-                        yield ("reasoning_piece", piece["data"])
-                for k, v_chatter in self._chatters.items():
-                    if k == speaker_name:
-                        continue
-                    v_chatter.add_salon_cache(speaker_name, current_utterance)
-                self.hoster.add_salon_cache(speaker_name, current_utterance)
             hoster_utterance = ""
-            task_completed = False
-            if settings.show_hoster:
-                yield ("speaker_turn", self.hoster_name)
-            async for piece in self.hoster.speaking(i, settings.rounds, True):
+            async for piece in self.hoster.speaking(i):
                 if piece["type"] == "content":
-                    if settings.show_hoster:
-                        yield ("content_piece", piece["data"])
+                    yield ("content_piece", piece["data"])
                     hoster_utterance += piece["data"]
                 elif piece["type"] == "reasoning":
-                    if settings.show_hoster:
-                        yield ("reasoning_piece", piece["data"])
-            if self.hoster._function_calling:
-                try:
-                    if (
-                        self.hoster._function_calling["function"]["name"]
-                        == "mark_task_as_completed"
-                    ):
-                        arguments = json.loads(
-                            self.hoster._function_calling["function"]["arguments"]
-                        )
-                        task_completed = arguments["all_steps_done"]
-                except Exception as e:
-                    logger.error(self.hoster._function_calling)
-                    logger.error(e)
-                    task_completed = True
-            if task_completed:
-                yield ("task_finish", None)
-                break
+                    yield ("reasoning_piece", piece["data"])
+            if self.hoster.function_called_name == "mark_task_as_completed":
+                arguments = json.loads(self.hoster.function_called_arguments)
+                if arguments["all_steps_done"] is True:
+                    yield ("task_finish", None)
+                    break
+            elif self.hoster.function_called_name == "determine_next_speaker":
+                arguments = json.loads(self.hoster.function_called_arguments)
+                next_speaker_name = arguments["next_speaker_name"]
+                reason=arguments["reason"]
+                next_speaker = self.chatters.get(next_speaker_name)
+                if next_speaker is None:
+                    raise Exception(f"{next_speaker} is not valid speaker")
+                next_speaker.add_salon_cache("hoster",reason)
+
+            yield ("speaker_turn", next_speaker_name)
+            current_utterance = ""
+            async for piece in next_speaker.speaking(
+                i,
+            ):
+                if piece["type"] == "content":
+                    yield ("content_piece", piece["data"])
+                    current_utterance += piece["data"]
+                elif piece["type"] == "reasoning":
+                    yield ("reasoning_piece", piece["data"])
             for k, v_chatter in self._chatters.items():
-                v_chatter.add_salon_cache(self.hoster_name, hoster_utterance)
+                if k == next_speaker_name:
+                    continue
+                v_chatter.add_salon_cache(next_speaker_name, current_utterance)
+            self.hoster.add_salon_cache(next_speaker_name, current_utterance)
+
+
+async def main():
+    s = Salon()
+    async for _ in s.chatting():
+        pass
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
