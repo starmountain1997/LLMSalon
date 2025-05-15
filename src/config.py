@@ -1,6 +1,6 @@
 from dynaconf import Dynaconf
 
-SETTING_PATH = "/home/guozr/CODE/ObGrapper/cfg/writter.yaml"
+SETTING_PATH = "settings.yaml"
 
 settings = Dynaconf(
     envvar_prefix="DYNACONF",
