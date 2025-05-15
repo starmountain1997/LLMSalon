@@ -1,6 +1,10 @@
+import os.path as osp
+
 from dynaconf import Dynaconf
 
-SETTING_PATH = "settings.yaml"
+PROJECT_ROOT = osp.dirname(osp.dirname(osp.abspath(__file__)))
+
+SETTING_PATH = osp.join(PROJECT_ROOT, "src/settings.yaml")
 
 settings = Dynaconf(
     envvar_prefix="DYNACONF",

@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os.path as osp
 from typing import AsyncGenerator, Dict
 
 import aiohttp_client
@@ -10,9 +9,6 @@ from loguru import logger
 from config import settings
 
 # richuru.install()
-
-
-PROJECT_ROOT = osp.dirname(osp.dirname(osp.abspath(__file__)))
 
 
 class SSEClient:

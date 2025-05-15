@@ -8,8 +8,7 @@ from loguru import logger
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from config import SETTING_PATH
-from utils import PROJECT_ROOT
+from config import PROJECT_ROOT, SETTING_PATH
 
 GRADIO_COMMAND = [sys.executable, "interface.py"]
 

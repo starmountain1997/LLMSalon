@@ -44,10 +44,7 @@ template:
       核心指南:
       1. 你的回复必须简洁、专业，并严格符合你的角色设定。
       2. 始终围绕你的核心观点和任务进行。
-      3. 当你认为分配给你的任务已彻底完成，或整体目标已达成时，必须调用 `mark_task_as_completed` 函数。
-         - 调用条件: 仅当所有相关步骤确实完成时。
-         - 参数格式: `{"all_steps_done": true}` (布尔值，表示所有步骤已完成)
-         - **重要**: 准确调用此函数至关重要。
+      
 
   # System prompt template for the hoster
   hoster_prompt:
@@ -69,16 +66,12 @@ template:
       核心指南:
       1. 你的回复必须简洁、公正，并严格符合你的角色设定。
       2. 你的主要职责是引导讨论、总结进展、并在适当时推动任务完成。
-      3. 当群聊的整体目标达成时，你必须调用 `mark_task_as_completed` 函数。
-         - 调用条件: 确认所有子任务完成，且最终成果符合目标要求。
-         - 参数格式: `{"all_steps_done": true}` (布尔值)
-         - **重要**: 准确调用此函数标志着讨论的成功结束。
 
 # Configuration for individual chatters
 chatters:
   学生: # Student Poet
     provider: deepseek
-    model_name: deepseek-chat
+    model_name: DeepSeek-V3-Fast
     system_prompt: |
       ===
       角色: 充满热情的青年诗人
@@ -106,7 +99,7 @@ chatters:
 
   老师: # Teacher / Poetry Review Expert
     provider: deepseek
-    model_name: deepseek-chat
+    model_name: DeepSeek-V3-Fast
     system_prompt: |
       ===
       角色: 汉语言文学教授 (诗歌评审专家)
@@ -150,7 +143,7 @@ chatters:
 hoster:
   name: "主持人" # Name of the host
   provider: deepseek
-  model_name: deepseek-chat
+  model_name: DeepSeek-V3-Fast
   system_prompt: |
     ===
     角色: 诗歌工作坊引导者 (主持人)
