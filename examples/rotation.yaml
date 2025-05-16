@@ -92,7 +92,7 @@ template:
       ### {role}
 
       {role_prompt}
-
+    
     salon_cache: |
       
       # 对话记录
@@ -123,7 +123,7 @@ hoster:
   top_p: 0.95
 
 chatters:
-  诗人:
+  诗人: 
     provider: deepseek
     model_name: *model_name
     system_prompt: |
@@ -162,7 +162,7 @@ chatters:
     temperature: 1.5
     top_p: 0.95
 
-  文学教授:
+  文学教授: 
     provider: deepseek
     model_name: *model_name
     system_prompt: |

@@ -1,4 +1,3 @@
-import json
 from typing import Any, AsyncGenerator, Dict, Tuple
 
 from chatter import Chatter, Hoster
@@ -65,7 +64,7 @@ class Salon:
                 yield ("task_completed", None)
                 break
 
-    async def assign_chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
+    async def assignment_chatting(self) -> AsyncGenerator[Tuple[str, Any], None]:
         current_utterance = ""
         yield ("speaker_turn", "hoster")
         async for piece in self.hoster.speaking(-1):
@@ -74,30 +73,22 @@ class Salon:
                 current_utterance += piece["data"]
             elif piece["type"] == "reasoning":
                 yield ("reasoning_piece", piece["data"])
+        if current_utterance:
+            for chatter in self.chatters.values():
+                chatter.add_salon_cache("hoster", current_utterance)
+        next_speaker_name, reason = self.hoster.determined_next_speaker_name()
+        next_speaker = self.chatters[next_speaker_name]
+
+        next_speaker_message=f"请{next_speaker_name}发言！理由是：{reason}"
+        yield ("content_piece", next_speaker_message)
+
         for chatter in self.chatters.values():
-            chatter.add_salon_cache("hoster", current_utterance)
+            chatter.add_salon_cache(
+                "hoster", next_speaker_message
+            )
 
-        i=0
-        while i<settings.rounds:
+        for i in range(settings.rounds):
             yield ("new_turn", i)
-            async for piece in self.hoster.speaking(i):
-                yield ("hoster_determing", None)
-            if self.hoster.function_called_name == "mark_task_as_completed":
-                arguments = json.loads(self.hoster.function_called_arguments)
-                if arguments["all_steps_done"] is True:
-                    yield ("task_finish", None)
-                    break
-            elif self.hoster.function_called_name == "determine_next_speaker":
-                arguments = json.loads(self.hoster.function_called_arguments)
-                next_speaker_name = arguments["next_speaker_name"]
-                reason = arguments.get("reason")
-                next_speaker = self.chatters.get(next_speaker_name)
-                if next_speaker is None:
-                    raise Exception(f"{next_speaker} is not valid speaker")
-                next_speaker.add_salon_cache("hoster", reason)
-                yield ("next_speaker", next_speaker_name)
-                yield ("next_speak_reason", reason)
-
             yield ("speaker_turn", next_speaker_name)
             current_utterance = ""
             async for piece in next_speaker.speaking(
@@ -114,10 +105,34 @@ class Salon:
                 v_chatter.add_salon_cache(next_speaker_name, current_utterance)
             self.hoster.add_salon_cache(next_speaker_name, current_utterance)
 
+            current_utterance = ""
+            yield ("speaker_turn", "hoster")
+            async for piece in self.hoster.speaking(i):
+                if piece["type"] == "content":
+                    yield ("content_piece", piece["data"])
+                    current_utterance += piece["data"]
+                elif piece["type"] == "reasoning":
+                    yield ("reasoning_piece", piece["data"])
+            if current_utterance:
+                for chatter in self.chatters.values():
+                    chatter.add_salon_cache("hoster", current_utterance)
+            if self.hoster.if_mark_task_as_completed:
+                yield ("task_completed", None)
+                break
+            next_speaker_name, reason = self.hoster.determined_next_speaker_name()
+            next_speaker = self.chatters[next_speaker_name]
+            next_speaker_message = f"请{next_speaker_name}发言！理由是：{reason}"
+            yield ("content_piece", next_speaker_message)
+
+            for chatter in self.chatters.values():
+                chatter.add_salon_cache(
+                    "hoster", next_speaker_message
+                )
+
 
 async def main():
     s = Salon()
-    async for _ in s.rotation_chatting():
+    async for _ in s.assign_chatting():
         pass
 
 

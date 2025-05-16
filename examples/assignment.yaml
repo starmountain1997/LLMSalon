@@ -2,7 +2,7 @@
 semaphore: 30 # Maximum concurrent API requests
 show_hoster: true # Whether to display the host's contributions in the output
 
-chat_mode: ROTATION
+chat_mode: assignment
 
 # API provider configurations
 providers:
@@ -67,7 +67,7 @@ template:
   # System prompt template for the hoster
   hoster_prompt:
     opening_prompt: |
-      现在整场讨论开始了，你需要引导讨论者开始讨论。
+      现在整场讨论开始了，你需要引导讨论者开始讨论，并决定下一个发言的人是谁。
 
     salon_prompt: |
 
@@ -87,12 +87,14 @@ template:
 
       1. 你的回复必须简洁、专业，并严格符合你的角色设定。
       2. 始终围绕你的核心观点和任务进行。
+      3. 如果讨论结束，调用`mark_task_as_completed`函数
+      4. 如果讨论未结束，调用`determine_next_speaker`指定下一个发言者
 
     chatter_list: |
       ### {role}
 
       {role_prompt}
-
+    
     salon_cache: |
       
       # 对话记录
@@ -123,7 +125,7 @@ hoster:
   top_p: 0.95
 
 chatters:
-  诗人:
+  诗人: 
     provider: deepseek
     model_name: *model_name
     system_prompt: |
@@ -162,7 +164,7 @@ chatters:
     temperature: 1.5
     top_p: 0.95
 
-  文学教授:
+  文学教授: 
     provider: deepseek
     model_name: *model_name
     system_prompt: |
@@ -205,6 +207,7 @@ chatters:
     top_p: 0.9
 
 topic: |
+
   请以“这么近，那么美，周末到河北”为主题，创作一首《江城子》。
 
 rounds: 20

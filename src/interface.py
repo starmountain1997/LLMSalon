@@ -23,6 +23,8 @@ async def run_salon_gradio():
 
     if settings.chat_mode.lower() == "rotation":
         chatting_func = salon.rotation_chatting
+    elif settings.chat_mode.lower() == "assignment":
+        chatting_func = salon.assignment_chatting
     else:
         raise ValueError(f"Invalid chat mode：{settings.chat_mode}")
 

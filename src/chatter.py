@@ -240,6 +240,15 @@ class Hoster(Chatter):
                 return fc["function"]["arguments"]["all_steps_done"] is True
         return False
 
+    def determined_next_speaker_name(self):
+        for fc in self.function_calling:
+            if fc["function"]["name"] == "determine_next_speaker":
+                logger.info(fc)
+                next_speaker_name = fc["function"]["arguments"]["next_speaker"]
+                reason = fc["function"]["arguments"].get("reason","无详细原因")
+                return next_speaker_name, reason
+        raise RuntimeError("cannot determine next speaker name")
+
     @property
     def salon_cache_template(self):
         return settings.template.hoster_prompt.salon_cache
