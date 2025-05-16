@@ -20,19 +20,16 @@ async def run_salon_gradio():
     current_speaker = None
     current_cot = ""
     current_turn = 0
-    hoster_info = ""
+
+    if settings.chat_mode.lower() == "rotation":
+        chatting_func = salon.rotation_chatting
+    else:
+        raise ValueError(f"Invalid chat mode：{settings.chat_mode}")
 
     try:
-        async for event_type, data in salon.chatting():
-            if event_type == "hoster_determing":
-                hoster_info = "主持人正在决定下一位发言者..."
-            elif event_type == "next_speaker":
-                hoster_info = f"下一位发言者: {data}"
-            elif event_type == "next_speak_reason" and data:
-                hoster_info += f"\n选择理由: {data}"
-            
+        async for event_type, data in chatting_func():
             if stop_flag or event_type == "task_finish":
-                yield (chat_history, "# LLM 沙龙已停止", hoster_info)
+                yield (chat_history, "# LLM 沙龙已停止")
                 return
             if event_type == "speaker_turn":
                 current_speaker = str(data)
@@ -41,7 +38,6 @@ async def run_salon_gradio():
                 yield (
                     chat_history,
                     f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
-                    hoster_info
                 )
             elif event_type == "content_piece" and current_speaker:
                 current_cot = ""
@@ -56,7 +52,6 @@ async def run_salon_gradio():
                 yield (
                     chat_history,
                     f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
-                    hoster_info
                 )
             elif event_type == "reasoning_piece" and current_speaker:
                 if (
@@ -77,14 +72,12 @@ async def run_salon_gradio():
                 yield (
                     chat_history,
                     f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
-                    hoster_info
                 )
             elif event_type == "new_turn":
                 current_turn = data + 1
                 yield (
                     chat_history,
                     f"# LLM 沙龙（{current_turn}/{settings.rounds}）讨论中...🤖💬",
-                    hoster_info
                 )
 
     except Exception as e:
@@ -110,7 +103,9 @@ def save_chat_history(history):
     return f"聊天历史已保存到 {filepath}"
 
 
-with gr.Blocks(theme=gr.themes.Soft(), css="""
+with gr.Blocks(
+    theme=gr.themes.Soft(),
+    css="""
     .hoster-info {
         padding: 15px;
         margin: 10px 0;
@@ -123,7 +118,8 @@ with gr.Blocks(theme=gr.themes.Soft(), css="""
     .hoster-info:hover {
         background: #e9ecef;
     }
-""") as demo:
+""",
+) as demo:
     title = gr.Markdown(f"# LLM 沙龙（0/{settings.rounds}）讨论中...🤖💬")
     gr.Markdown(settings.topic)
 
@@ -149,14 +145,10 @@ with gr.Blocks(theme=gr.themes.Soft(), css="""
         )
 
     save_status = gr.Markdown()
-    hoster_info_display = gr.Markdown(
-        "主持人信息将显示在这里",
-        elem_classes=["hoster-info"]
-    )
 
     run_button.click(
         fn=run_salon_gradio,
-        outputs=[chatbot_display, title, hoster_info_display],
+        outputs=[chatbot_display, title],
         show_progress="hidden",
     )
     save_button.click(
@@ -168,11 +160,11 @@ with gr.Blocks(theme=gr.themes.Soft(), css="""
     def stop_discussion():
         global stop_flag
         stop_flag = True
-        return "# LLM 沙龙已停止", "主持人信息将显示在这里"
+        return "# LLM 沙龙已停止"
 
     stop_button.click(
         fn=stop_discussion,
-        outputs=[title, hoster_info_display],
+        outputs=[title],
     )
 
 

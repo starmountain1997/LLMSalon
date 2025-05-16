@@ -4,35 +4,33 @@ from typing import AsyncGenerator, Dict
 
 import aiohttp_client
 import richuru
-
-richuru.install()
 from loguru import logger
 
 from config import settings
 
+richuru.install()
+
 
 class SSEClient:
     sem = asyncio.Semaphore(settings.semaphore)
-    chatter_tools = None
-    hoster_tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "mark_task_as_completed",
-                "description": "Call this function when the task is fully completed.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "all_steps_done": {
-                            "type": "boolean",
-                            "description": "Confirms all steps are done.",
-                        },
+    mark_task_as_completed = {
+        "type": "function",
+        "function": {
+            "name": "mark_task_as_completed",
+            "description": "Call this function when the task is fully completed.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "all_steps_done": {
+                        "type": "boolean",
+                        "description": "Confirms all steps are done.",
                     },
-                    "required": ["all_steps_done"],
                 },
+                "required": ["all_steps_done"],
             },
         },
-        {
+    }
+    determine_next_speaker = {
             "type": "function",
             "function": {
                 "name": "determine_next_speaker",
@@ -52,8 +50,7 @@ class SSEClient:
                     "required": ["next_speaker_name", "reason"],
                 },
             },
-        },
-    ]
+        }
 
     @classmethod
     async def send_sse(
