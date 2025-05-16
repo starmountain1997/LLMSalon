@@ -120,8 +120,13 @@ class Salon:
                 yield ("task_completed", None)
                 break
             next_speaker_name, reason = self.hoster.determined_next_speaker_name()
-            next_speaker = self.chatters[next_speaker_name]
-            next_speaker_message = f"请{next_speaker_name}发言！理由是：{reason}"
+            next_speaker = self.chatters.get(next_speaker_name)
+            if next_speaker:
+                next_speaker_message = f"请{next_speaker_name}发言！理由是：{reason}"
+            else:
+                next_speaker=self.chatters["小说家"]
+                next_speaker_message = f"请小说家发言！理由是：当前无角色{next_speaker_name}，请小说家补充"
+
             yield ("content_piece", next_speaker_message)
 
             for chatter in self.chatters.values():
